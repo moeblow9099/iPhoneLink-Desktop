@@ -18,12 +18,26 @@ internal static class Program
         engine.Shown += (_, _) => engine.Hide();
         engine.Show();
 
+        Application.Run(new ShellForm(engine, ReadBridgeToken()));
+    }
+
+    private static string ReadBridgeToken()
+    {
         var tokenPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "iPhoneLinkCRM",
             "bridge-token.txt");
-        var token = File.Exists(tokenPath) ? File.ReadAllText(tokenPath).Trim() : string.Empty;
 
-        Application.Run(new ShellForm(engine, token));
+        for (var i = 0; i < 20; i++)
+        {
+            if (File.Exists(tokenPath))
+            {
+                var token = File.ReadAllText(tokenPath).Trim();
+                if (token.Length >= 32) return token;
+            }
+            Thread.Sleep(50);
+        }
+
+        return File.Exists(tokenPath) ? File.ReadAllText(tokenPath).Trim() : string.Empty;
     }
 }

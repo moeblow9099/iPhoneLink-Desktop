@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>iPhoneLink</title>
+  <style>
+    :root { --screen:#000; --ink:#fff; --muted:#8e8e93; --key:#2c2c2e; --blue:#0A84FF; --green:#30D158; --red:#FF3B30; }
+    html[data-theme="light"] .inb { background:#e9e9eb; color:#000; }
+    * { box-sizing: border-box; }
+    html, body { margin:0; height:100%; background:#ececee; font-family: -apple-system, "Segoe UI", Inter, sans-serif; user-select:none; }
+    body { display:flex; align-items:center; justify-content:center; overflow:hidden; }
+    .stage { perspective:1400px; width:354px; height:769px; }
+    .shell {
+      width:402px; height:874px; padding:3px; border-radius:55px; transform-style:preserve-3d; transform-origin:top left; transform:scale(0.88);
+      background: linear-gradient(90deg,#cfcfd3 0%,#6a6a6e 5%,#323235 12%,#1f1f21 50%,#323235 88%,#6a6a6e 95%,#cfcfd3 100%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.42), 0 18px 36px rgba(20,20,22,.18);
+    }
+    .glass { height:100%; border-radius:51px; overflow:hidden; background:var(--screen); color:var(--ink); display:flex; flex-direction:column; position:relative; }
+    .island { position:absolute; top:11px; left:50%; width:126px; height:37px; transform:translateX(-50%); border-radius:19px; background:#000; z-index:8; }
+    .status { height:54px; display:flex; align-items:flex-end; padding:0 32px 8px; font-weight:600; font-size:15px; }
+    .status span:last-child { margin-left:auto; font-size:12px; }
+    main { flex:1; min-height:0; overflow:hidden; }
+    .page { height:100%; overflow:auto; }
+    .title { font-size:34px; font-weight:700; letter-spacing:-.03em; padding:4px 20px 12px; }
+    .tabs { display:grid; grid-template-columns:repeat(5,1fr); height:52px; }
+    .tabs button { background:none; border:0; color:#8e8e93; font-size:10px; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:3px; padding-bottom:4px; cursor:pointer; }
+    .tabs button.on { color:var(--blue); }
+    .home { height:24px; display:flex; justify-content:center; padding-top:4px; }
+    .home i { width:128px; height:5px; border-radius:99px; background:var(--ink); opacity:.18; display:block; }
+    .keys { width:284px; margin:0 auto; display:grid; grid-template-columns:repeat(3,76px); gap:18px 28px; }
+    .key { width:76px; height:76px; border-radius:999px; border:0; background:var(--key); color:var(--ink); cursor:pointer; }
+    .key b { display:block; font-size:34px; font-weight:400; line-height:34px; }
+    .key s { display:block; font-size:10px; font-weight:600; letter-spacing:.16em; text-decoration:none; }
+    .num { min-height:88px; display:flex; align-items:center; justify-content:center; font-size:40px; font-weight:300; }
+    .row { display:flex; align-items:center; gap:12px; padding:10px 20px; border-bottom:.5px solid rgba(84,84,88,.45); cursor:pointer; }
+    .av { width:40px; height:40px; border-radius:50%; background:#3a3a3c; display:grid; place-items:center; font-size:14px; font-weight:600; flex:none; }
+    .muted { color:var(--muted); }
+    .blue { color:var(--blue); }
+    .call { width:76px; height:76px; border-radius:999px; border:0; background:var(--green); color:#fff; cursor:pointer; }
+    .end { width:64px; height:64px; border-radius:999px; border:0; background:var(--red); color:#fff; }
+    .bubble { max-width:75%; padding:8px 12px; border-radius:18px; margin:4px 0; font-size:17px; color:#fff; }
+    .out { margin-left:auto; }
+    .im { background:#0A84FF; }
+    .sm { background:#30D158; }
+    .inb { background:#1c1c1e; }
+    .ctrl { width:64px; height:64px; border-radius:999px; border:0; background:#2c2c2e; color:#fff; }
+    .ctrl.on { background:#fff; color:#000; }
+    button { font-family:inherit; }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <div class="shell" id="shell">
+      <div class="glass">
+        <div class="island"></div>
+        <div class="status"><span id="clock">9:41</span><span>5G  ■■■■</span></div>
+        <main id="main"></main>
+        <nav class="tabs" id="tabs"></nav>
+      </div>
+    </div>
+  </div>
+<script>
+const TABS = [
+  { id:"messages", label:"Messages" },
+  { id:"calls", label:"Recents" },
+  { id:"contacts", label:"Contacts" },
+  { id:"phone", label:"Keypad" },
+  { id:"voicemail", label:"Voicemail" },
+];
+const CONTACTS = [
+  ["Jordan Hale","+1 (415) 555-0142"],["Elena Voss","+1 (628) 555-0177"],["Mom","+1 (510) 555-0108"],["Dad","+1 (510) 555-0109"],
+  ["Alex Rivera","+1 (415) 555-0164"],["Priya Shah","+1 (925) 555-0119"],["Anika Patel","+1 (650) 555-0133"],["Front Desk","+1 (415) 555-0120"],
+  ["Northline","+1 (415) 555-0190"],["Bay Courier","+1 (415) 555-0199"],["Chris Lang","+1 (415) 555-0181"],["Mei Chen","+1 (510) 555-0176"],
+  ["Nate Brooks","+1 (628) 555-0134"],["Samir Cole","+1 (347) 555-0152"],["Lei Zhang","+1 (408) 555-0171"],["Harbor Crew",""],
+  ["Apple","645-373"],["Uber","242-73"],["Chase","24273"],["Hayes Dental","+1 (415) 555-0112"],["Walgreens","+1 (415) 555-0160"],
+  ["USCIS","898-872"],["Nora Keene","+1 (917) 555-0144"],["Marcus Webb","+1 (206) 555-0188"],["Northline Office","+1 (415) 555-0100"]
+];
+const THREADS = [
+  ["Jordan Hale","imessage",[["in","Cut 12 is locked. Can you sit with color at 3?"],["out","Yes. I'll bring the Harbor stills."],["in","Color room is open early. Come now if you can."]]],
+  ["Elena Voss","imessage",[["out","Section 4 is the only open point."],["in","24 months, then a refresh clause."]]],
+  ["Mom","imessage",[["in","Landed. We're at arrivals."],["out","Terminal 3. I'll be 20 minutes."],["in","We're at the bakery downstairs."]]],
+  ["Dad","imessage",[["in","Garage code is 4412 this week."],["out","Got it."]]],
+  ["Alex Rivera","imessage",[["in","Friday still good? I can be there at 7."],["out","Yes. Badge at will-call under Rivera."]]],
+  ["Priya Shah","imessage",[["in","Proofs from the shop."],["out","Got them. East wall is right."]]],
+  ["Anika Patel","sms",[["in","Thursday 9:40am. Reply C to confirm."],["out","C"]]],
+  ["Front Desk","sms",[["in","Package at the desk for Chen, 12C."]]],
+  ["Bay Courier","sms",[["in","Crate 4418 out for delivery, 1–3pm."]]],
+  ["Chris Lang","imessage",[["in","Left the spare key in the bowl."],["out","Thanks. I'll be late."]]],
+  ["Mei Chen","imessage",[["in","Sunday dumplings at 6?"],["out","Yes. I'll bring greens."]]],
+  ["Nate Brooks","imessage",[["out","Need the LUT from Friday."],["in","Dropbox folder is Rec709-v3."]]],
+  ["Harbor Crew","imessage",[["in","Call sheet is in the drive."],["out","Printed."],["in","Wrap by 9 if we stay on 12."]]],
+  ["Apple","imessage",[["in","Your Apple ID verification code is 184 329. Don't share it."]]],
+  ["Uber","sms",[["in","Your driver David is arriving. Silver Camry, 8GHT221."]]],
+  ["Chase","sms",[["in","Did you use your card for $48.20 at BLUE BOTTLE? Reply YES or NO."]]],
+  ["Hayes Dental","sms",[["in","Reminder: cleaning Tue 10:20am. Reply C to confirm."],["out","C"]]],
+  ["Walgreens","sms",[["in","Ready for pickup. Order 8821, Van Ness."]]],
+  ["USCIS","sms",[["in","Case was updated. Check your online account."]]],
+  ["Nora Keene","imessage",[["in","Can we move the 4pm call to 4:30?"],["out","Yes. I'll ping the room."]]],
+  ["Marcus Webb","sms",[["in","Stems are on the drive. Check bus 3."],["out","Pulling them now."]]],
+  ["Northline Office","imessage",[["in","Visitor badge is at reception."],["out","Heading down."]]],
+  ["Lei Zhang","imessage",[["out","On site in ten."],["in","Loading dock B is open."]]],
+  ["Samir Cole","imessage",[["in","Cut lock notes are in the doc."],["out","Reading now."]]],
+  ["Northline","imessage",[["in","Bay 2 is free after 1."],["out","We'll take it."]]],
+];
+const CALLS = [
+  ["Jordan Hale","in"],["Front Desk","missed"],["Elena Voss","out"],["Mom","in"],["Priya Shah","out"],["Alex Rivera","out"]
+];
+const KEYS = [["1",""],["2","ABC"],["3","DEF"],["4","GHI"],["5","JKL"],["6","MNO"],["7","PQRS"],["8","TUV"],["9","WXYZ"],["*",""],["0","+"],["#",""]];
+
+let view = "phone", dial = "", thread = null, call = null, muted = false, speaker = false;
+const ICONS = {
+  messages: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M5.2 5.2h13.6A2.8 2.8 0 0 1 21.6 8v7.2a2.8 2.8 0 0 1-2.8 2.8h-6.2L7.4 21.2v-3.2H5.2A2.8 2.8 0 0 1 2.4 15.2V8A2.8 2.8 0 0 1 5.2 5.2Z" stroke="currentColor" stroke-width="1.7"/></svg>',
+  calls: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.2" stroke="currentColor" stroke-width="1.7"/><path d="M12 7.5V12l3.2 2" stroke="currentColor" stroke-width="1.7"/></svg>',
+  contacts: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.4" stroke="currentColor" stroke-width="1.7"/><path d="M5.6 19.2c.7-3.2 3.2-5 6.4-5s5.7 1.8 6.4 5" stroke="currentColor" stroke-width="1.7"/></svg>',
+  phone: '<svg width="22" height="22" viewBox="0 0 24 24"><g fill="currentColor"><rect x="4" y="4" width="3" height="3" rx=".7"/><rect x="10.5" y="4" width="3" height="3" rx=".7"/><rect x="17" y="4" width="3" height="3" rx=".7"/><rect x="4" y="10.5" width="3" height="3" rx=".7"/><rect x="10.5" y="10.5" width="3" height="3" rx=".7"/><rect x="17" y="10.5" width="3" height="3" rx=".7"/><rect x="4" y="17" width="3" height="3" rx=".7"/><rect x="10.5" y="17" width="3" height="3" rx=".7"/><rect x="17" y="17" width="3" height="3" rx=".7"/></g></svg>',
+  voicemail: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="7.2" cy="12" r="3.6" stroke="currentColor" stroke-width="1.7"/><circle cx="16.8" cy="12" r="3.6" stroke="currentColor" stroke-width="1.7"/><path d="M7.2 15.6h9.6" stroke="currentColor" stroke-width="1.7"/></svg>'
+};
+
+function initials(name){ return name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase(); }
+function fmt(n){ const d=n.replace(/\D/g,""); if(d.length===10) return `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`; return n; }
+
+function renderTabs(){
+  tabs.innerHTML = TABS.map(t => `<button class="${view===t.id&&!call?'on':''}" data-id="${t.id}">${ICONS[t.id]}<span>${t.label}</span></button>`).join("");
+  tabs.style.display = call ? "none" : "grid";
+  [...tabs.children].forEach(b => b.onclick = () => { view=b.dataset.id; thread=null; draw(); });
+}
+
+function draw(){
+  document.getElementById("clock").textContent = new Date().toLocaleTimeString([], {hour:"numeric", minute:"2-digit"});
+  renderTabs();
+  if (call) { main.innerHTML = inCall(); return; }
+  if (view==="phone") main.innerHTML = keypad();
+  else if (view==="messages") main.innerHTML = thread ? convo() : inbox();
+  else if (view==="calls") main.innerHTML = recents();
+  else if (view==="contacts") main.innerHTML = contacts();
+  else if (view==="voicemail") main.innerHTML = `<div class="page"><div class="title">Voicemail</div><p class="muted" style="text-align:center;margin-top:80px">No voicemails</p></div>`;
+  bind();
+}
+
+function keypad(){
+  return `<div class="page" style="display:flex;flex-direction:column;padding-bottom:40px">
+    <div class="num">${dial ? fmt(dial) : ""}</div>
+    <div class="keys">${KEYS.map(([d,l])=>`<button class="key" data-k="${d}"><b>${d}</b>${l?`<s>${l}</s>`:""}</button>`).join("")}</div>
+    <div class="keys" style="margin-top:18px;row-gap:0"><span></span><button class="call" id="go">☎</button><button id="del" style="background:none;border:0;color:var(--ink);font-size:22px;${dial?'':'opacity:0'}">⌫</button></div>
+  </div>`;
+}
+function inbox(){
+  return `<div class="page"><div class="title">Messages</div>${THREADS.map((t,i)=>`<div class="row" data-t="${i}"><div class="av">${initials(t[0])}</div><div style="min-width:0;flex:1"><div style="display:flex;justify-content:space-between"><b>${t[0]}</b><span class="muted">Now</span></div><div class="muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t[2].at(-1)[1]}</div></div></div>`).join("")}</div>`;
+}
+function convo(){
+  const t = THREADS[thread];
+  return `<div class="page" style="display:flex;flex-direction:column"><div style="display:flex;align-items:center;padding:0 8px 8px"><button id="back" class="blue" style="background:none;border:0;font-size:22px">‹</button><div style="flex:1;text-align:center"><b>${t[0]}</b><div class="muted" style="font-size:12px">${t[1]==="imessage"?"iMessage":"Text Message"}</div></div></div>
+  <div style="flex:1;overflow:auto;padding:8px 16px">${t[2].map(m=>`<div class="bubble ${m[0]==="out"?"out":""} ${m[0]==="out"?(t[1]==="imessage"?"im":"sm"):"inb"}">${m[1]}</div>`).join("")}</div></div>`;
+}
+function recents(){
+  return `<div class="page"><div class="title" style="display:flex;justify-content:space-between">Recents <span id="gear" class="blue" style="font-size:18px;padding-top:10px">⚙</span></div>${CALLS.map(c=>`<div class="row" data-call="${c[0]}"><div><div style="color:${c[1]==="missed"?"#ff453a":"inherit"}">${c[0]}</div><div class="muted">${c[1]}</div></div></div>`).join("")}</div>`;
+}
+function contacts(){
+  return `<div class="page"><div class="title">Contacts</div>${CONTACTS.map(c=>`<div class="row" data-call="${c[0]}"><span>${c[0]}</span></div>`).join("")}</div>`;
+}
+function inCall(){
+  return `<div class="page" style="display:flex;flex-direction:column;align-items:center;padding-top:48px">
+    <div class="muted">calling mobile...</div><h2 style="font-size:28px;font-weight:500;margin:8px 0 48px">${call}</h2>
+    <div style="display:grid;grid-template-columns:repeat(3,64px);gap:28px 36px;margin-bottom:48px">
+      <button class="ctrl ${muted?"on":""}" id="mute">mute</button><button class="ctrl" id="kpad">keypad</button><button class="ctrl ${speaker?"on":""}" id="spk">audio</button>
+      <button class="ctrl">add</button><button class="ctrl">FaceTime</button><button class="ctrl">contacts</button>
+    </div><button class="end" id="hang">☎</button></div>`;
+}
+
+function bind(){
+  main.querySelectorAll("[data-k]").forEach(b => b.onclick = () => { dial += b.dataset.k; draw(); });
+  const go = main.querySelector("#go"); if (go) go.onclick = () => { if(dial){ call = fmt(dial); draw(); } };
+  const del = main.querySelector("#del"); if (del) del.onclick = () => { dial = dial.slice(0,-1); draw(); };
+  main.querySelectorAll("[data-t]").forEach(b => b.onclick = () => { thread = +b.dataset.t; draw(); });
+  main.querySelectorAll("[data-call]").forEach(b => b.onclick = () => { call = b.dataset.call; draw(); });
+  const back = main.querySelector("#back"); if (back) back.onclick = () => { thread=null; draw(); };
+  const hang = main.querySelector("#hang"); if (hang) hang.onclick = () => { call=null; draw(); };
+  const mute = main.querySelector("#mute"); if (mute) mute.onclick = () => { muted=!muted; draw(); };
+  const spk = main.querySelector("#spk"); if (spk) spk.onclick = () => { speaker=!speaker; draw(); };
+  const gear = main.querySelector("#gear"); if (gear) gear.onclick = () => {
+    const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = next;
+  };
+}
+
+let rotX=0, rotY=0, drag=false, sx=0, sy=0;
+const shell = document.getElementById("shell");
+shell.addEventListener("pointerdown", e => { drag=true; sx=e.clientX; sy=e.clientY; shell.setPointerCapture(e.pointerId); });
+shell.addEventListener("pointermove", e => {
+  if(!drag) return;
+  rotY = Math.max(-22, Math.min(22, (e.clientX-sx)/8));
+  rotX = Math.max(-12, Math.min(12, -(e.clientY-sy)/10));
+  shell.style.transform = `scale(0.88) rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+});
+window.addEventListener("pointerup", () => {
+  drag=false;
+  shell.style.transition="transform .5s cubic-bezier(.22,1,.36,1)";
+  shell.style.transform="scale(0.88) rotateX(0) rotateY(0)";
+  setTimeout(()=> shell.style.transition="", 500);
+});
+
+draw();
+
+const BRIDGE = window.IPHONELINK_BRIDGE || "http://127.0.0.1:8765";
+const TOKEN = window.IPHONELINK_TOKEN || "";
+
+async function bridge(path, options) {
+  if (!TOKEN) return null;
+  const res = await fetch(BRIDGE.replace(/\/$/, "") + "/" + path, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      "X-iPhoneLink-Token": TOKEN,
+      ...(options && options.headers)
+    }
+  });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+function applyMessages(rows) {
+  if (!Array.isArray(rows) || !rows.length) return;
+  const groups = new Map();
+  for (const m of rows) {
+    const name = m.from || m.From || m.Handle || m.DeviceName || "Unknown";
+    if (!groups.has(name)) groups.set(name, { channel: /sms/i.test(m.Type || m.type || "") ? "sms" : "imessage", list: [] });
+    const folder = String(m.Folder || m.folder || m.Status || "");
+    const dir = /sent|out/i.test(folder) ? "out" : "in";
+    groups.get(name).list.push([dir, m.Body || m.body || m.Subject || m.Preview || ""]);
+  }
+  THREADS.length = 0;
+  for (const [name, g] of groups) THREADS.push([name, g.channel, g.list.slice(-12)]);
+}
+
+function applyContacts(rows) {
+  if (!Array.isArray(rows) || !rows.length) return;
+  CONTACTS.length = 0;
+  for (const c of rows) {
+    const phone = Array.isArray(c.Phones) ? (c.Phones[0] || "") : (c.phone || "");
+    CONTACTS.push([c.Name || c.name || "Unknown", phone]);
+  }
+}
+
+function applyCalls(rows) {
+  if (!Array.isArray(rows) || !rows.length) return;
+  CALLS.length = 0;
+  for (const c of rows) {
+    const name = c.Name || c.name || c.Number || c.phone || "Unknown";
+    const kind = /miss/i.test(c.Type || c.type || "") ? "missed" : /out/i.test(c.Type || c.type || "") ? "out" : "in";
+    CALLS.push([name, kind]);
+  }
+}
+
+async function syncLive() {
+  try {
+    const [msgs, contacts, calls] = await Promise.all([
+      bridge("messages?limit=500"),
+      bridge("contacts"),
+      bridge("calls")
+    ]);
+    if (msgs && msgs.ok) applyMessages(msgs.messages);
+    if (contacts && contacts.ok) applyContacts(contacts.contacts);
+    if (calls && calls.ok) applyCalls(calls.calls);
+    draw();
+  } catch (err) {}
+}
+
+const goBind = bind;
+bind = function() {
+  goBind();
+  const go = main.querySelector("#go");
+  if (go) {
+    const prev = go.onclick;
+    go.onclick = () => {
+      if (prev) prev();
+      if (dial && TOKEN) {
+        bridge("call", { method: "POST", body: JSON.stringify({ phone: dial }) });
+      }
+    };
+  }
+};
+
+if (TOKEN) {
+  syncLive();
+  setInterval(syncLive, 8000);
+}
+</script>
+</body>
+</html>

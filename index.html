@@ -10,9 +10,9 @@
     * { box-sizing: border-box; }
     html, body { margin:0; height:100%; background:#ececee; font-family: -apple-system, "Segoe UI", Inter, sans-serif; user-select:none; }
     body { display:flex; align-items:center; justify-content:center; overflow:hidden; }
-    .stage { perspective:1400px; }
+    .stage { perspective:1400px; width:354px; height:769px; }
     .shell {
-      width:402px; height:874px; padding:3px; border-radius:55px; transform-style:preserve-3d;
+      width:402px; height:874px; padding:3px; border-radius:55px; transform-style:preserve-3d; transform-origin:top left; transform:scale(0.88);
       background: linear-gradient(90deg,#cfcfd3 0%,#6a6a6e 5%,#323235 12%,#1f1f21 50%,#323235 88%,#6a6a6e 95%,#cfcfd3 100%);
       box-shadow: inset 0 1px 0 rgba(255,255,255,.42), 0 18px 36px rgba(20,20,22,.18);
     }
@@ -191,12 +191,12 @@ shell.addEventListener("pointermove", e => {
   if(!drag) return;
   rotY = Math.max(-22, Math.min(22, (e.clientX-sx)/8));
   rotX = Math.max(-12, Math.min(12, -(e.clientY-sy)/10));
-  shell.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+  shell.style.transform = `scale(0.88) rotateX(${rotX}deg) rotateY(${rotY}deg)`;
 });
 window.addEventListener("pointerup", () => {
   drag=false;
   shell.style.transition="transform .5s cubic-bezier(.22,1,.36,1)";
-  shell.style.transform="rotateX(0) rotateY(0)";
+  shell.style.transform="scale(0.88) rotateX(0) rotateY(0)";
   setTimeout(()=> shell.style.transition="", 500);
 });
 

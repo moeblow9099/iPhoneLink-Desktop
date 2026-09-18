@@ -269,7 +269,7 @@ public sealed partial class MainForm
         info.Controls.Add(syncHistory, 0, 4);
         info.Controls.Add(new Label
         {
-            Text = "Messages and call history sync automatically when the phone exposes the required Bluetooth profiles. Contact import is optional and runs only when Sync Contacts is enabled.",
+            Text = "Messages, contacts, and call history sync automatically when a phone is Bluetooth-connected. Sync Contacts / Show Messages toggles are not required.",
             Dock = DockStyle.Fill,
             ForeColor = muted,
             Font = new Font(PremiumUiFont, 9F, FontStyle.Regular),

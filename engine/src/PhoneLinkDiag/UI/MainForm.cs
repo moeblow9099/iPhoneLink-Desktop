@@ -1673,7 +1673,8 @@ public sealed partial class MainForm : Form
         string? requestedDeviceId = null,
         bool showCompletionPopup = true,
         bool showFailureDialog = true,
-        bool exportReport = true)
+        bool exportReport = true,
+        int? messageLimit = null)
     {
         await _mapWorkflowGate.WaitAsync(_appCts.Token);
         _profileGrid.Rows.Clear();
@@ -1729,7 +1730,7 @@ public sealed partial class MainForm : Form
 
             await EnsureMapSessionForDeviceAsync(selected);
 
-            var readLimit = SelectedInboxReadLimit();
+            var readLimit = Math.Clamp(messageLimit ?? SelectedInboxReadLimit(), 1, 500);
             var inboxHandles = usePagedListing
                 ? await ListMessageHandlesPagedAsync("telecom/msg/inbox", readLimit, _appCts.Token)
                 : await ListMessageHandlesSingleAsync("telecom/msg/inbox", readLimit, _appCts.Token);
@@ -2550,17 +2551,18 @@ LIMIT 2000";
 
             try
             {
-                _logger.Info("AUTO SYNC", $"New connected phone detected: {device.Name} ({device.Id}). Auto-syncing messages and call history.");
+                _logger.Info("AUTO SYNC", $"New connected phone detected: {device.Name} ({device.Id}). Auto-syncing messages, contacts, and call history with UI toggles off.");
                 await ReadInboxFastAsync(
                     includeProfileCheck: false,
                     usePagedListing: true,
                     requestedDeviceId: device.Id,
                     showCompletionPopup: false,
                     showFailureDialog: false,
-                    exportReport: false);
+                    exportReport: false,
+                    messageLimit: 500);
 
                 await SyncPbapDataAsync(
-                    includeContacts: _syncContactsToggle.Checked,
+                    includeContacts: true,
                     includeCalls: true,
                     showUserErrors: false,
                     targetDeviceId: device.Id);
@@ -2614,7 +2616,7 @@ LIMIT 2000";
 
         try
         {
-            _statusLabel.Text = $"Auto-syncing messages and call history from {device.Name}...";
+            _statusLabel.Text = $"Auto-syncing messages, contacts, and call history from {device.Name}...";
 
             var messagesOk = await ReadInboxFastAsync(
                 includeProfileCheck: false,
@@ -2622,10 +2624,11 @@ LIMIT 2000";
                 requestedDeviceId: targetDeviceId,
                 showCompletionPopup: false,
                 showFailureDialog: false,
-                exportReport: false);
+                exportReport: false,
+                messageLimit: 500);
 
             var callsOk = await SyncPbapDataAsync(
-                includeContacts: _syncContactsToggle.Checked,
+                includeContacts: true,
                 includeCalls: true,
                 showUserErrors: false,
                 targetDeviceId: targetDeviceId);

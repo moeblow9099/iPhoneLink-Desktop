@@ -43,7 +43,17 @@ public sealed class ShellForm : Form
         _web.CoreWebView2.Settings.IsStatusBarEnabled = false;
         _web.CoreWebView2.Settings.AreBrowserAcceleratorKeysEnabled = false;
 
-        var tokenJson = JsonSerializer.Serialize(_token);
+        var token = _token;
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            var tokenPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "iPhoneLinkCRM",
+                "bridge-token.txt");
+            if (File.Exists(tokenPath)) token = File.ReadAllText(tokenPath).Trim();
+        }
+
+        var tokenJson = JsonSerializer.Serialize(token);
         await _web.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(
             $"window.IPHONELINK_TOKEN={tokenJson};window.IPHONELINK_BRIDGE='http://127.0.0.1:8765';");
 

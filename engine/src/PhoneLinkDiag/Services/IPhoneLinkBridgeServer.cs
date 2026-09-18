@@ -25,6 +25,7 @@ public sealed class IPhoneLinkBridgeServer : IDisposable
     public Func<Task<object>>? CallsAsync { get; set; }
     public Func<string, string, string?, Task<object>>? SendSmsAsync { get; set; }
     public Func<string, string?, Task<object>>? CallAsync { get; set; }
+    public Func<Task<object>>? HangUpAsync { get; set; }
 
     public IPhoneLinkBridgeServer(DiagnosticLogger log, string url = "http://127.0.0.1:8765/")
     {
@@ -100,7 +101,8 @@ public sealed class IPhoneLinkBridgeServer : IDisposable
                 "calls" => CallsAsync is null ? new { ok = false, error = "Calls handler not configured." } : await CallsAsync(),
                 "send-sms" => await HandleSendSmsAsync(context),
                 "call" => await HandleCallAsync(context),
-                _ => new { ok = false, error = "Unknown endpoint.", endpoints = new[] { "/health", "/devices", "/messages", "/refresh-inbox", "/contacts", "/calls", "/send-sms", "/call" } }
+                "hangup" => await HandleHangUpAsync(context),
+                _ => new { ok = false, error = "Unknown endpoint.", endpoints = new[] { "/health", "/devices", "/messages", "/refresh-inbox", "/contacts", "/calls", "/send-sms", "/call", "/hangup" } }
             };
 
             await WriteJsonAsync(context, result);
@@ -140,6 +142,17 @@ public sealed class IPhoneLinkBridgeServer : IDisposable
         var deviceMode = Get(payload, "deviceMode") ?? Get(payload, "device") ?? "selected";
         if (CallAsync is null) return new { ok = false, error = "Call handler not configured." };
         return await CallAsync(phone, deviceMode);
+    }
+
+    private async Task<object> HandleHangUpAsync(HttpListenerContext context)
+    {
+        if (!string.Equals(context.Request.HttpMethod, "POST", StringComparison.OrdinalIgnoreCase))
+        {
+            context.Response.StatusCode = 405;
+            return new { ok = false, error = "Use POST." };
+        }
+        if (HangUpAsync is null) return new { ok = false, error = "Hang-up handler not configured." };
+        return await HangUpAsync();
     }
 
     private async Task<Dictionary<string, JsonElement>> ReadBodyJsonAsync(HttpListenerRequest request)
